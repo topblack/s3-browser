@@ -51,6 +51,7 @@ app.get('/browse', (req, res) => {
   new AWS.S3(s3Option).listObjectsV2(params, (err, data) => {
     if (err) {
       console.log(err, err.stack);
+      res.sendStatus(404);
     } else {
       let content = '';
 
