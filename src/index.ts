@@ -16,7 +16,7 @@ const pathDelimiter = '/';
 function getParentPath(objectPath: string) {
   if (objectPath && objectPath.length > 0) {
     let objectPathNoEndingSlash = '';
-    if (objectPath.endsWith('/')) {
+    if (objectPath.endsWith(pathDelimiter)) {
       objectPathNoEndingSlash = objectPath.substring(0, objectPath.length - 1);
     }
     const pathSegs = objectPathNoEndingSlash.split(pathDelimiter);
@@ -29,16 +29,24 @@ function getParentPath(objectPath: string) {
 
 function getBrowseLinkToDirectory(displayText: string, path: string) {
   if (path === '/') {
-    return `<p><a href='browse'>${displayText}</a></p>`;
+    return `<p><a href='/browse'>${displayText}</a></p>`;
   }
-  return `<p><a href='browse?path=${path}'>${displayText}</a></p>`;
+  return `<p><a href='/browse?path=${path}'>${displayText}</a></p>`;
 }
 
 function getDownloadLinkToDirectory(displayText: string, path: string) {
-  return `<p><a href='download?path=${path}'>${displayText}</a></p>`;
+  return `<p><a href='/download?path=${path}'>${displayText}</a></p>`;
 }
 
+app.get('/', (req, res) => {
+  res.redirect('/browse');
+});
+
 app.get('/browse', (req, res) => {
+  if (!bucketName) {
+    res.status(503).send('The service is not setup properly. Missing bucket name.');
+  }
+
   const listPath = req.query.path;
   const params = {
     Bucket: bucketName,
