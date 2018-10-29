@@ -29,17 +29,17 @@ function getParentPath(objectPath: string) {
 
 function getBrowseLinkToDirectory(displayText: string, path: string) {
   if (path === '/') {
-    return `<p><a href='/browse'>${displayText}</a></p>`;
+    return `<p><a href='browse'>${displayText}</a></p>`;
   }
-  return `<p><a href='/browse?path=${path}'>${displayText}</a></p>`;
+  return `<p><a href='browse?path=${path}'>${displayText}</a></p>`;
 }
 
 function getDownloadLinkToDirectory(displayText: string, path: string) {
-  return `<p><a href='/download?path=${path}'>${displayText}</a></p>`;
+  return `<p><a href='download?path=${path}'>${displayText}</a></p>`;
 }
 
 app.get('/', (req, res) => {
-  res.redirect('/browse');
+  res.redirect('browse');
 });
 
 app.get('/browse', (req, res) => {
