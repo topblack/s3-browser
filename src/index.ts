@@ -1,6 +1,5 @@
-import * as AWS from 'aws-sdk';
 import bodyParser from 'body-parser';
-import express from'express';
+import express from 'express';
 
 // Create Express server
 const app = express();
@@ -9,23 +8,6 @@ const port = process.env.PORT || 8080;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-const bucketName = process.env.AWS_BUCKET;
-const s3Option = { apiVersion: '2006-03-01' };
-const pathDelimiter = '/';
-
-function getParentPath(objectPath: string) {
-  if (objectPath && objectPath.length > 0) {
-    let objectPathNoEndingSlash = '';
-    if (objectPath.endsWith(pathDelimiter)) {
-      objectPathNoEndingSlash = objectPath.substring(0, objectPath.length - 1);
-    }
-    const pathSegs = objectPathNoEndingSlash.split(pathDelimiter);
-    if (pathSegs.length > 1) {
-      const endingKeyLength = pathSegs[pathSegs.length - 1].length;
-      return objectPathNoEndingSlash.substring(0, objectPath.length - endingKeyLength - 1);
-    }
-  }
-}
 
 function getBrowseLinkToDirectory(displayText: string, path: string) {
   if (path === '/') {
@@ -38,14 +20,19 @@ function getDownloadLinkToDirectory(displayText: string, path: string) {
   return `<p><a href='download?path=${path}'>${displayText}</a></p>`;
 }
 
-app.get('/', (req, res) => {
+function redirectHome(res: express.Response) {
   res.redirect('browse');
+}
+
+app.get('*', (req, res) => {
+  redirectHome(res);
+});
+
+app.get('/', (req, res) => {
+  redirectHome(res);
 });
 
 app.get('/browse', (req, res) => {
-  if (!bucketName) {
-    res.status(503).send('The service is not setup properly. Missing bucket name.');
-  }
 
   const listPath = req.query.path;
   const params = {
