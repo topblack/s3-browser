@@ -1,13 +1,15 @@
 import bodyParser from 'body-parser';
 import express from 'express';
+import { S3ArchiveManager } from './ArchiveManager';
 
 // Create Express server
 const app = express();
 const port = process.env.PORT || 8080;
 
+const archiveManager = new S3ArchiveManager(process.env.AWS_BUCKET);
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
 
 function getBrowseLinkToDirectory(displayText: string, path: string) {
   if (path === '/') {
@@ -24,61 +26,54 @@ function redirectHome(res: express.Response) {
   res.redirect('browse');
 }
 
-app.get('*', (req, res) => {
-  redirectHome(res);
-});
-
-app.get('/', (req, res) => {
-  redirectHome(res);
-});
-
 app.get('/browse', (req, res) => {
 
   const listPath = req.query.path;
-  const params = {
-    Bucket: bucketName,
-    Prefix: listPath,
-    Delimiter: pathDelimiter,
-  };
+  const parentPath = archiveManager.getParentPath(listPath);
 
-  const parentPath = getParentPath(listPath);
-
-  new AWS.S3(s3Option).listObjectsV2(params, (err, data) => {
-    if (err) {
-      console.log(err, err.stack);
-      res.sendStatus(404);
-    } else {
+  archiveManager.listArtifacts(listPath)
+    .then((artifacts) => {
       let content = '';
 
       if (listPath) {
+        content += getBrowseLinkToDirectory(`. (${listPath})`, listPath);
         if (parentPath) {
-          content += getBrowseLinkToDirectory('..', parentPath);
+          content += getBrowseLinkToDirectory(`.. (${parentPath})`, parentPath);
         } else {
-          content += getBrowseLinkToDirectory('..', '/');
+          content += getBrowseLinkToDirectory('.. (/)', '/');
         }
       }
 
-      data.CommonPrefixes.forEach((value) => {
-        const displayText = value.Prefix.substring(0, value.Prefix.length - 1);
-        content += getBrowseLinkToDirectory(displayText, value.Prefix);
+      artifacts.sort((a, b) => {
+        return -(a.name).localeCompare(b.name);
       });
-      data.Contents.forEach((value) => {
-        content += getDownloadLinkToDirectory(value.Key, value.Key);
+
+      artifacts.forEach((artifact) => {
+        if (artifact.isDir) {
+          content += getBrowseLinkToDirectory(artifact.name, artifact.path);
+        } else {
+          content += getDownloadLinkToDirectory(artifact.name, artifact.path);
+        }
       });
       res.send(content);
-    }
-  });
+    }).catch((reason) => {
+      console.log(reason, reason.stack);
+      res.sendStatus(404);
+    });
 });
 
 app.get('/download', (req, res) => {
   const downloadPath = req.query.path;
-  const params = {
-    Bucket: bucketName,
-    Key: downloadPath,
-    Expires: 60 * 60 * 1,
-  };
-  const url = new AWS.S3(s3Option).getSignedUrl('getObject', params);
-  res.redirect(url);
+  archiveManager.getDownloadUrl(downloadPath)
+    .then(url => res.redirect(url))
+    .catch((reason) => {
+      console.log(reason, reason.stack);
+      res.sendStatus(503);
+    });
+});
+
+app.get('*', (req, res) => {
+  redirectHome(res);
 });
 
 app.listen(port, () => {
