@@ -95,4 +95,20 @@ export class S3ArchiveManager implements ArchiveManager {
   }
 }
 
-export class LocalFSArchiveManager { }
+export class MockArchiveManager implements ArchiveManager {
+
+  listArtifacts(url: string): Promise<Artifact[]> {
+    return new Promise((resolve, reject) => {
+      const result = [] as Artifact[];
+      resolve(result);
+    });
+  }
+
+  getDownloadUrl(url: string): Promise<string> {
+    return new Promise((resolve, reject) => { resolve(url); });
+  }
+
+  getParentPath(url: string): string {
+    return url;
+  }
+}
