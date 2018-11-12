@@ -86,7 +86,7 @@ export class GitHubTeamAccessCheck {
   };
 
   private initRules = () => {
-    this.addRule('\\/.*', "PerkinElmer", "all", {
+    this.addRule('\\/.*', process.env.AC_ORG, process.env.AC_TEAM, {
       allowBrowse: true,
       allowDownload: true
     });

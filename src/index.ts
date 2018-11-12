@@ -41,12 +41,12 @@ app.use(passport.session());
 
 function getBaseUrl() {
   if (process.env.BASE_URL) {
-    if (process.env.BASE_URL.endsWith('/')) {
-      return process.env.BASE_URL.substring(0, process.env.BASE_URL.length - 1);
+    if (!process.env.BASE_URL.endsWith('/')) {
+      return `${process.env.BASE_URL}/`;
     }
     return process.env.BASE_URL;
   }
-  return '';
+  return '/';
 }
 
 function verify(accessToken: string, refreshToken: string, profile: any, cb: any) {
@@ -55,35 +55,35 @@ function verify(accessToken: string, refreshToken: string, profile: any, cb: any
 
 function getBrowseLinkToDirectory(displayText: string, path: string) {
   if (path === '/') {
-    return `<p><a href='${baseUrl}/browse'>${displayText}</a></p>`;
+    return `<p><a href='${baseUrl}browse'>${displayText}</a></p>`;
   }
-  return `<p><a href='${baseUrl}/browse?path=${path}'>${displayText}</a></p>`;
+  return `<p><a href='${baseUrl}browse?path=${path}'>${displayText}</a></p>`;
 }
 
 function getDownloadLinkToDirectory(displayText: string, path: string) {
-  return `<p><a href='${baseUrl}/download?path=${path}'>${displayText}</a></p>`;
+  return `<p><a href='${baseUrl}download?path=${path}'>${displayText}</a></p>`;
 }
 
 function redirectHome(res: express.Response) {
-  res.redirect(`${baseUrl}/browse`);
+  res.redirect(`${baseUrl}browse`);
 }
 
 const gitHubAuthScope = ['read:org', 'read:user'];
 
-const gitHubAuthOptions = { failureRedirect: `${baseUrl}/auth/failure`, scope: gitHubAuthScope };
+const gitHubAuthOptions = { failureRedirect: `${baseUrl}auth/failure`, scope: gitHubAuthScope };
 
-app.get(`${baseUrl}/auth`, passport.authenticate('github', gitHubAuthOptions));
+app.get(`${baseUrl}auth`, passport.authenticate('github', gitHubAuthOptions));
 
-app.get(`${baseUrl}/auth/callback`, passport.authenticate('github', gitHubAuthOptions), (req, res) => {
+app.get(`${baseUrl}auth/callback`, passport.authenticate('github', gitHubAuthOptions), (req, res) => {
   req.session.githubAccessToken = req.query.code;
   redirectHome(res);
 });
 
-app.get(`${baseUrl}/auth/failure`, (req, res) => {
+app.get(`${baseUrl}auth/failure`, (req, res) => {
   res.send('Authnorization failure.');
 });
 
-app.get(`${baseUrl}/browse`, ensureAuthenticated, checkPermission, (req, res) => {
+app.get(`${baseUrl}browse`, ensureAuthenticated, checkPermission, (req, res) => {
 
   const listPath = req.query.path;
   const parentPath = archiveManager.getParentPath(listPath);
@@ -119,7 +119,7 @@ app.get(`${baseUrl}/browse`, ensureAuthenticated, checkPermission, (req, res) =>
     });
 });
 
-app.get(`${baseUrl}/download`, ensureAuthenticated, (req, res) => {
+app.get(`${baseUrl}download`, ensureAuthenticated, (req, res) => {
   const downloadPath = req.query.path;
   archiveManager.getDownloadUrl(downloadPath)
     .then(url => res.redirect(url))
@@ -129,19 +129,19 @@ app.get(`${baseUrl}/download`, ensureAuthenticated, (req, res) => {
     });
 });
 
-app.get('*', (req, res) => {
+app.get(`${baseUrl}`, (req, res) => {
   redirectHome(res);
 });
 
 app.listen(port, () => {
-  console.log(`Listening ${port}`);
+  console.log(`Listening ${port} baseUrl: ${baseUrl}`);
 });
 
 function ensureAuthenticated(req: any, res: any, next: any) {
   if (req.isAuthenticated()) {
     return next();
   }
-  res.redirect(`${baseUrl}/auth`);
+  res.redirect(`${baseUrl}auth`);
 }
 
 function checkPermission(req: any, res: any, next: any) {
